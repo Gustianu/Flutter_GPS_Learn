@@ -32,11 +32,34 @@ class _MyHomePageState extends State<MyHomePage> {
   String? _errorMessage;
   StreamSubscription<Position>? _positionStream;
   String? _currentAddress;
+  String? distanceToPNB;
+
+  // titik tetap PNB
+  final double _pnbLatitude = -6.176333;
+  final double _pnbLongitude = 106.696969;
 
   @override
   void dispose() {
     _positionStream?.cancel();
     super.dispose();
+  }
+
+  String _formatDistance(double meters){
+    if(meters < 1000){
+      return '${meters.toStringAsFixed(0)} m';
+    }else{
+      double km = meters / 1000;
+      return '${km.toStringAsFixed(2)} Km';
+    }
+  }
+
+  double _calculateDistance(Position pos){ 
+    return Geolocator.distanceBetween (
+      _pnbLatitude ,
+      _pnbLongitude ,
+      pos.latitude , // ’position ’ dari stream
+      pos.longitude ,
+    );
   }
 
   Future<String> _getAddressFromLatLng(Position position) async{
@@ -90,10 +113,13 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       Position position = await _getPermissionAndLocation();
       String getAddress = await _getAddressFromLatLng(position);
+      double distanceInMeters = _calculateDistance(position);
+
       setState(() {
         _currentPosition = position;
         _currentAddress = getAddress;
         _errorMessage = null;
+        distanceToPNB = _formatDistance(distanceInMeters);
       });
     } catch (e) {
       setState(() {
@@ -116,10 +142,13 @@ class _MyHomePageState extends State<MyHomePage> {
             locationSettings: locationSettings,
           ).listen((Position position) async{
             String getAddress = await _getAddressFromLatLng(position);
+            double distanceInMeters = _calculateDistance(position);
+
             setState(() {
               _currentPosition = position;
               _currentAddress = getAddress;
               _errorMessage = null;
+              distanceToPNB = _formatDistance(distanceInMeters);
             });
           });
     } catch (e) {
@@ -179,6 +208,30 @@ class _MyHomePageState extends State<MyHomePage> {
                           _currentAddress!,
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 16,),
+
+                        Column(
+                          children: [
+                            Text(
+                              "Jarak ke PNB:",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            SizedBox(height: 6,),
+
+                            Text(
+                              distanceToPNB ?? "-",
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black
+                              ),
+                            )
+                          ],
                         )
                     ],
                   ),
